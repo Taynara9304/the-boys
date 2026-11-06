@@ -56,7 +56,7 @@ void desiste(struct mundo *m, int t, struct evento *ev)
     // insere na LEF o viaja()
     struct evento *novo_ev = malloc(sizeof(struct evento));
 
-    novo_ev->funcao = viaja;
+    novo_ev->tipo = viaja;
     novo_ev->heroi = ev->heroi;
     novo_ev->base = ev->base;
     novo_ev->missao = -1;

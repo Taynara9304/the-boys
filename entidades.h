@@ -24,7 +24,7 @@ struct heroi
 {
     int id;
     struct cjto_t *habilidades;
-    int estado; // 0 = vivo; 1 = morto; 3 = desabilitado.
+    int estado; // 0 = morto; 1 = vivo; 3 = desabilitado.
     int paciencia;
     int velocidade;
     int experiencia;
@@ -37,7 +37,7 @@ struct base
     int lotacao_maxima;
     struct cjto_t *presentes;
     int id_herois[6];
-    int estado;
+    int estado; // 0 = desabilitada; 1 = abilitada
     struct fila_t *fila_de_espera;
     struct ponto local;
 };
@@ -53,7 +53,7 @@ struct missao
 struct invasao
 {
     int id;
-    struct ponto local;
+    int local;
     int tempo_penalidade_base;
     int tempo_penalidade_heroi;
 };
@@ -77,9 +77,10 @@ struct mundo
 struct evento
 {
     int tipo;
-    int heroi;
-    int base;
-    int missao;
+    int id_heroi;
+    int id_base;
+    int id_missao;
+    int id_invasao;
 };
 
 #endif

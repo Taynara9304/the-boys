@@ -2,11 +2,105 @@
 #include "universo.h"
 #include <stdlib.h>
 
+void eventos_iniciais(struct mundo *m)
+{
+    for (int i = 0; i < N_HEROIS; i++)
+    {
+        struct evento *ev = malloc(sizeof(struct evento));
+
+        if (!ev)
+            return;
+
+        ev->tipo = 1;
+        ev->id_heroi = i;
+        ev->id_base = rand() % N_BASES;
+        ev->id_missao = -1;
+        ev->id_invasao = -1;
+
+        if (fprio_insere(m->lef, ev, 1, (rand() % 4321)) < 0)
+        {
+            free(ev);
+            return;
+        }
+    }
+
+    /*
+      Cada missão deve ser agendada para ocorrer em algum momento da simu-
+      lação:
+      para cada missão M:
+      tempo = número aleatório [0...T_FIM_DO_MUNDO]
+      criar e inserir na LEF o evento MISSÃO (tempo, M)
+
+    */
+    for (int i = 0; i < N_MISSOES; i++)
+    {
+        struct evento *ev = malloc(sizeof(struct evento));
+        if (!ev)
+            return;
+
+        ev->tipo = 9;
+        ev->id_heroi = -1;
+        ev->id_base = -1;
+        ev->id_missao = i;
+        ev->id_invasao = -1;
+
+        if (fprio_insere(m->lef, ev, 9, (rand() % (T_FIM_DO_MUNDO + 1))) < 0)
+        {
+            free(ev);
+            return;
+        }
+    }
+
+    /*
+    Cada invasão deve ser agendada para ocorrer a partir dos três primeiros dias
+    de simulação:
+    para cada invasão I:
+    tempo = número aleatório [(60*24*3)+1...T_FIM_DO_MUNDO]
+    criar e inserir na LEF o evento INVADE (tempo, I)
+  */
+    for (int i = 0; i < N_INVASOES; i++)
+    {
+        struct evento *ev = malloc(sizeof(struct evento));
+        if (!ev)
+            return;
+
+        ev->tipo = 10;
+        ev->id_heroi = -1;
+        ev->id_base = m->invasoes[i].local;
+        ev->id_missao = -1;
+        ev->id_invasao = i;
+
+        if (fprio_insere(m->lef, ev, 10, 4321 + (rand() % (T_FIM_DO_MUNDO - 4321 + 1))) < 0)
+        {
+            free(ev);
+            return;
+        }
+    }
+
+    /*
+      O evento FIM deve ser agendado para o instante final da simulação:
+      tempo = T_FIM_DO_MUNDO
+      criar e inserir na LEF o evento FIM (tempo)
+    */
+    struct evento *ev = malloc(sizeof(struct evento));
+    if (!ev)
+        return;
+
+    ev->tipo = 13;
+    ev->id_heroi = -1;
+    ev->id_base = -1;
+    ev->id_missao = -1;
+    ev->id_invasao = -1;
+
+    if (fprio_insere(m->lef, ev, 13, T_FIM_DO_MUNDO) < 0)
+        free(ev);
+}
+
 void inicializar_mundo(struct mundo *m)
 {
     m->NHerois = N_HEROIS;
     m->herois = inicializar_herois();
-    
+
     m->NBases = N_BASES;
     m->bases = inicializar_bases();
 
@@ -24,6 +118,9 @@ void inicializar_mundo(struct mundo *m)
 
     m->relogio = T_INICIO;
 
+    if (!m->herois || !m->bases || !m->missoes || !m->invasoes || !m->lef)
+        return;
+
     eventos_iniciais(m);
 }
 
@@ -38,6 +135,7 @@ struct heroi *inicializar_herois()
     {
         h[i].id = i;
         h[i].experiencia = 0;
+        h[i].estado = 1;
         h[i].paciencia = rand() % 101;
         h[i].velocidade = (rand() % 4951) + 50;
         h[i].habilidades = cjto_aleat((rand() % 3) + 1, N_HABILIDADES);
@@ -56,18 +154,14 @@ struct base *inicializar_bases()
     for (int i = 0; i < N_BASES; i++)
     {
         b[i].id = i;
-
-        struct ponto p = {
-        x : rand() % (N_TAMANHO_MUNDO),
-        y : rand() % (N_TAMANHO_MUNDO),
-        };
-
-        b[i].local = p;
+        b[i].estado = 1;
+        b[i].local.x = rand() % N_TAMANHO_MUNDO;
+        b[i].local.y = rand() % N_TAMANHO_MUNDO;
         b[i].lotacao_maxima = (rand() % 8) + 3;
         b[i].presentes = cjto_cria(N_HEROIS);
         b[i].fila_de_espera = fila_cria();
     }
-    
+
     return b;
 }
 
@@ -82,12 +176,8 @@ struct missao *inicializar_missoes()
     {
         ms[i].id = i;
 
-        struct ponto p = {
-        x : rand() % (N_TAMANHO_MUNDO),
-        y : rand() % (N_TAMANHO_MUNDO),
-        };
-
-        ms[i].local = p;
+        ms[i].local.x = rand() % N_TAMANHO_MUNDO;
+        ms[i].local.y = rand() % N_TAMANHO_MUNDO;
         ms[i].habilidades = cjto_aleat(((rand() % 5) + 6), N_HABILIDADES);
         ms[i].perigo = rand() % 101;
     }
@@ -100,76 +190,21 @@ struct invasao *inicializar_invasoes()
     struct invasao *in = calloc(N_INVASOES, sizeof(struct invasao));
 
     if (!in)
-        return;
+        return NULL;
 
     for (int i = 0; i < N_INVASOES; i++)
     {
         in[i].id = i;
-
-        struct ponto p = {
-        x : rand() % (N_TAMANHO_MUNDO),
-        y : rand() % (N_TAMANHO_MUNDO),
-        };
-
-        in[i].local = p;
-        in[i].tempo_penalidade_heroi = rand() % 4320;
-        in[i].tempo_penalidade_base = rand() % 7200;
+        in[i].local = rand() % N_BASES;
+        in[i].tempo_penalidade_heroi = rand() % 4321;
+        in[i].tempo_penalidade_base = rand() % 7201;
     }
 
     return in;
 }
 
-
-void eventos_iniciais(struct mundo *m) {
-  for (int i = 0; i < N_HEROIS; i++)
-  {
-    m->herois[i].id_base = rand() % N_BASES;
-
-    struct evento *ev = malloc(sizeof(struct evento));
-    ev->tipo = 1;
-    ev->base = m->bases[i].id;
-    ev->heroi = m->herois[i].id;
-    ev->missao = -1;
-
-    fprio_insere(m->lef, ev, 0, (rand() % 4321));
-  }
-
-  /*
-    Cada missão deve ser agendada para ocorrer em algum momento da simu-
-    lação:
-    para cada missão M:
-    tempo = número aleatório [0...T_FIM_DO_MUNDO]
-    criar e inserir na LEF o evento MISSÃO (tempo, M)
-
-  */
-  for (int i = 0; i < N_MISSOES; i++)
-  {
-    struct evento *ev = malloc(sizeof(struct evento));
-    ev->funcao = missao;
-    ev->heroi = -1;
-    ev->base = -1;
-    ev->missao = i;
-
-    fprio_insere(m.lef, ev, 0, (rand() % T_FIM_DO_MUNDO));
-  }
-
-    /*
-    Cada invasão deve ser agendada para ocorrer a partir dos três primeiros dias
-    de simulação:
-    para cada invasão I:
-    tempo = número aleatório [(60*24*3)+1...T_FIM_DO_MUNDO]
-    criar e inserir na LEF o evento INVADE (tempo, I)
-  */
-
-  /*
-    O evento FIM deve ser agendado para o instante final da simulação:
-    tempo = T_FIM_DO_MUNDO
-    criar e inserir na LEF o evento FIM (tempo)
-  */
-}
-
 // fuções de destroi
-struct mundo *destroi_mundo(struct mundo *w) {
-
+struct mundo *destroi_mundo(struct mundo *w)
+{
+    return NULL;
 }
-
