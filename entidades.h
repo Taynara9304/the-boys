@@ -5,6 +5,15 @@
 #include "fprio.h"
 #include "fila.h"
 
+#define T_INICIO 0
+#define T_FIM_DO_MUNDO 525600 // 525600 = 60*24*365 = 365 dias
+#define N_TAMANHO_MUNDO 20000 // não era um par de coordenadas?
+#define N_HABILIDADES 10
+#define N_HEROIS N_HABILIDADES * 5
+#define N_BASES N_HEROIS / 5
+#define N_MISSOES T_FIM_DO_MUNDO / 100
+#define N_INVASOES T_FIM_DO_MUNDO / 10000
+
 struct ponto
 {
     int x;
@@ -15,7 +24,7 @@ struct heroi
 {
     int id;
     struct cjto_t *habilidades;
-    int estado;
+    int estado; // 0 = vivo; 1 = morto; 3 = desabilitado.
     int paciencia;
     int velocidade;
     int experiencia;
@@ -65,13 +74,9 @@ struct mundo
     struct fprio_t *lef;
 };
 
-struct evento;
-
-typedef void (*funcao_t)(struct mundo *mundo, int t, struct evento *evento);
-
 struct evento
 {
-    funcao_t funcao;
+    int tipo;
     int heroi;
     int base;
     int missao;
