@@ -1,26 +1,9 @@
-#include <stdbool.h>
+#ifndef ENTIDADES
+#define ENTIDADES
 
-// descreve um nodo da fila
-struct fila_nodo_t
-{
-    void *item;               // item associado ao nodo
-    struct fila_nodo_t *prox; // próximo nodo
-};
-
-// descreve uma fila
-struct fila_t
-{
-    struct fila_nodo_t *prim; // primeiro nodo da fila
-    struct fila_nodo_t *fim;  // último nodo da fila
-    int num;                  // número de itens na fila
-};
-
-struct cjto_t
-{
-    int cap;    // Capacidade do conjunto
-    int num;    // Número de itens (cardinalidade)
-    bool *flag; // Vetor de booleanos
-};
+#include "conjunto.h"
+#include "fprio.h"
+#include "fila.h"
 
 struct ponto
 {
@@ -42,7 +25,7 @@ struct heroi
 struct base
 {
     int id;
-    int lotação_maxima;
+    int lotacao_maxima;
     struct cjto_t *presentes;
     int id_herois[6];
     int estado;
@@ -79,4 +62,19 @@ struct mundo
     int NHabilidades;
     int TamanhoMundo;
     int relogio;
+    struct fprio_t *lef;
 };
+
+struct evento;
+
+typedef void (*funcao_t)(struct mundo *mundo, int t, struct evento *evento);
+
+struct evento
+{
+    funcao_t funcao;
+    int heroi;
+    int base;
+    int missao;
+};
+
+#endif

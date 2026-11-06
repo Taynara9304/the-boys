@@ -1,44 +1,70 @@
 #include <stdlib.h>
 #include <math.h>
 #include "fila.h"
+#include "conjunto.h"
 #include "fprio.h"
 #include "eventos.h"
 #include "entidades.h"
 
-void chega(int t, struct heroi h, struct base b)
+void chega(struct mundo *m, int t, struct evento *ev)
 {
-    int espera = 0;
+    int esp = 0;
 
-    h.id_base = b.id;
+    struct heroi *h = &m->herois[ev->heroi];
+    struct base *b = &m->bases[ev->base];
 
-    if (b.id_herois < b.lotação_maxima && b.fila_de_espera.num == 0)
-        espera = 1;
+    if ((b->presentes->num < b->lotacao_maxima) && fila_tamanho(b->fila_de_espera) == 0)
+        esp = 1;
     else
-        espera = h.paciencia > 10 * b.fila_de_espera.num;
+        esp = h->paciencia > 10 * fila_tamanho(b->fila_de_espera);
 
-    if (espera && b.estado)
+    struct evento *novo_ev = malloc(sizeof(struct evento));
+
+    if (esp && b->estado)
         // insere espera() na LEF
-        return;
+        novo_ev->funcao = espera;
     else
         // insere desiste() na LEF
-        return;
+        novo_ev->funcao = desiste;
+
+    novo_ev->heroi = h->id;
+    novo_ev->base = b->id;
+    novo_ev->missao = -1;
+
+    fprio_insere(m->lef, novo_ev, 0, t + 1);
 }
 
-void espera(int t, struct heroi *h, struct base b)
+void espera(struct mundo *m, int t, struct evento *ev)
 {
-    b.fila_de_espera.fim->prox->item = h;
+    fila_insere(&m->bases[ev->base].fila_de_espera, &m->herois[ev->heroi]);
+
     // insere avisa(t, b) na LEF
+    struct evento *novo_ev = malloc(sizeof(struct evento));
+
+    novo_ev->funcao = avisa;
+    novo_ev->heroi = ev->heroi;
+    novo_ev->base = ev->base;
+    novo_ev->missao = -1;
+
+    fprio_insere(m->lef, novo_ev, 0, t + 1);
 }
 
-void desiste(int t, struct heroi h, struct base b)
+void desiste(struct mundo *m, int t, struct evento *ev)
 {
-    int novaBase = rand();
-    // como eu sei quantas bases vão ter na minha inicialização?
-    // eu posso assumir que o id das bases vão de 0 a n?
+    m->herois[ev->heroi].id_base = rand() % m->NBases;
+
     // insere na LEF o viaja()
+    struct evento *novo_ev = malloc(sizeof(struct evento));
+
+    novo_ev->funcao = viaja;
+    novo_ev->heroi = ev->heroi;
+    novo_ev->base = ev->base;
+    novo_ev->missao = -1;
+
+    fprio_insere(m->lef, novo_ev, 0, t + 1);
 }
 
-void avisa(int t, struct base b)
+void avisa(struct mundo *m, int t, struct evento *ev)
 {
     if (!b.estado)
         return;
@@ -50,13 +76,13 @@ void avisa(int t, struct base b)
     }
 }
 
-void entra(int t, struct heroi h, struct base b)
+void entra(struct mundo *m, int t, struct evento *ev)
 {
     int tpb = 15 + h.paciencia * (rand() % 21);
     // insere o evento sai()
 }
 
-void sai(int t, struct heroi h, struct base b)
+void sai(struct mundo *m, int t, struct evento *ev)
 {
     // retira da base atual
     fila_retira(b.presentes);
@@ -70,7 +96,7 @@ void sai(int t, struct heroi h, struct base b)
     // insere na LEF o avisa()
 }
 
-void viaja(int t, struct heroi h, struct base b)
+void viaja(struct mundo *m, int t, struct evento *ev)
 {
     // como eu acho as coordenadas da base atual?
     int distancia = sqrt(pow((h.id_base.x - b.local.x), 2) + pow((h.id_base.y - b.local.y), 2));
@@ -79,7 +105,7 @@ void viaja(int t, struct heroi h, struct base b)
     // insere na LEF chega(t + duração, h, d)
 }
 
-void morre(int t, struct heroi h, struct base b)
+void morre(struct mundo *m, int t, struct evento *ev)
 {
     fila_retira(b.presentes);
     h.estado = 0;
@@ -87,7 +113,7 @@ void morre(int t, struct heroi h, struct base b)
     // cria e insere na LEF o evento AVISA (agora, B)
 }
 
-void missao(int i, struct missao m)
+void missao(struct mundo *m, int t, struct evento *ev)
 {
     // acha a base mais próxima da missão
     struct base bmp = primeira_base;
@@ -123,7 +149,7 @@ void missao(int i, struct missao m)
     }
 }
 
-void invade(int t, struct invasao i, struct base b)
+void invade(struct mundo *m, int t, struct evento *ev)
 {
     if (b.estado == 0)
     {
@@ -142,17 +168,17 @@ void invade(int t, struct invasao i, struct base b)
     // insere na LEF reconstroi_base(t + i.tempo_penalidade_base, b);
 }
 
-void recupera_heroi(int i, struct heroi h)
+void recupera_heroi(struct mundo *m, int t, struct evento *ev)
 {
     h.estado = 1;
 }
 
-void reconstroi_base(int t, struct base b)
+void reconstroi_base(struct mundo *m, int t, struct evento *ev)
 {
     b.estado = 1;
 }
 
-void fim(int t)
+void fim(struct mundo *m, int t, struct evento *ev)
 {
     // como encerra a simulação?
     // onde eu guardo as estatísticas?

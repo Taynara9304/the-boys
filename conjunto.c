@@ -103,7 +103,7 @@ struct cjto_t *cjto_aleat(int n, int cap)
 
     while (i < n)
     {
-        int posicao = rand() % (cap - 1);
+        int posicao = rand() % cap;
 
         if (!conjunto->flag[posicao])
         {

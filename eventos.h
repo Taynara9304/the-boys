@@ -1,7 +1,9 @@
 #ifndef EVENTOS
 #define EVENTOS
 
-void chega(int t, struct heroi h, struct base b);
+#include "entidades.h"
+
+void chega(struct mundo *m, int t, struct evento *ev);
 
 void espera(int t, struct heroi *h, struct base b);
 

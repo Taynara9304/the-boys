@@ -7,8 +7,10 @@
 #include <time.h>
 
 #include "entidades.h"
+#include "eventos.h"
 #include "conjunto.h"
 #include "fila.h"
+#include "fprio.h"
 
 // seus #defines vão aqui
 #define T_INICIO 0
@@ -43,7 +45,7 @@ void inicializar_herois(struct heroi *h)
     h[i].experiencia = 0;
     h[i].paciencia = rand() % 101;
     h[i].velocidade = (rand() % 4951) + 50;
-    h[i].habilidades = cjto_aleat(N_HABILIDADES, (rand() % 3) + 1);
+    h[i].habilidades = cjto_aleat((rand() % 3) + 1, N_HABILIDADES);
   }
 }
 
@@ -59,8 +61,8 @@ void inicializar_bases(struct base *b)
     };
 
     b[i].local = p;
-    b[i].lotação_maxima = (rand() % 8) + 3;
-    b[i].presentes = cjto_cria(b[i].lotação_maxima);
+    b[i].lotacao_maxima = (rand() % 8) + 3;
+    b[i].presentes = cjto_cria(N_HEROIS);
     b[i].fila_de_espera = fila_cria();
   }
   /*
@@ -85,7 +87,7 @@ void inicializar_missoes(struct missao *ms)
     };
 
     ms[i].local = p;
-    ms[i].habilidades = cjto_aleat(N_HABILIDADES, ((rand() % 5) + 6));
+    ms[i].habilidades = cjto_aleat(((rand() % 5) + 6), N_HABILIDADES);
     ms[i].perigo = rand() % 101;
   }
 
@@ -162,21 +164,12 @@ void inicializar_mundo(struct mundo *m)
 
   m->TamanhoMundo = N_TAMANHO_MUNDO;
 
+  m->lef = fprio_cria();
+
   m->relogio = T_INICIO;
 }
 
 // minimize o uso de variáveis globais
-struct evento_t;
-
-typedef void (*funcao_t)(struct mundo_t *mundo, int t, struct evento_t *evento);
-
-struct evento_t
-{
-  funcao_t funcao;
-  int heroi;
-  int base;
-  int missao;
-};
 
 // programa principal
 int main()
@@ -184,8 +177,8 @@ int main()
   srand(time(NULL));
 
   // iniciar o mundo
-  struct mundo *m;
-  inicializar_mundo(m);
+  struct mundo m;
+  inicializar_mundo(&m);
 
   /*
     Cada herói chegará em uma base aleatória em algum momento dos três
@@ -198,7 +191,15 @@ int main()
 
   for (int i = 0; i < N_HEROIS; i++)
   {
-    m->herois
+    m.herois[i].id_base = rand() % N_BASES;
+
+    struct evento *ev = malloc(sizeof(struct evento));
+    ev->funcao = chega;
+    ev->base = m.bases[i].id;
+    ev->heroi = m.herois[i].id;
+    ev->missao = -1;
+
+    fprio_insere(m.lef, ev, 0, (rand() % 4321));
   }
 
   /*
@@ -209,6 +210,16 @@ int main()
     criar e inserir na LEF o evento MISSÃO (tempo, M)
 
   */
+  for (int i = 0; i < N_MISSOES; i++)
+  {
+    struct evento *ev = malloc(sizeof(struct evento));
+    ev->funcao = missao;
+    ev->heroi = -1;
+    ev->base = -1;
+    ev->missao = i;
+
+    fprio_insere(m.lef, ev, 0, (rand() % T_FIM_DO_MUNDO));
+  }
 
   /*
     Cada invasão deve ser agendada para ocorrer a partir dos três primeiros dias
