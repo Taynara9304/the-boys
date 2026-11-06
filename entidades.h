@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 // descreve um nodo da fila
 struct fila_nodo_t
 {
@@ -13,6 +15,13 @@ struct fila_t
     int num;                  // número de itens na fila
 };
 
+struct cjto_t
+{
+    int cap;    // Capacidade do conjunto
+    int num;    // Número de itens (cardinalidade)
+    bool *flag; // Vetor de booleanos
+};
+
 struct ponto
 {
     int x;
@@ -22,11 +31,11 @@ struct ponto
 struct heroi
 {
     int id;
-    int habilidades[6];
+    struct cjto_t *habilidades;
     int estado;
     int paciencia;
     int velocidade;
-    int experiência;
+    int experiencia;
     int id_base;
 };
 
@@ -34,17 +43,17 @@ struct base
 {
     int id;
     int lotação_maxima;
-    struct fila_t *presentes;
+    struct cjto_t *presentes;
     int id_herois[6];
     int estado;
     struct fila_t *fila_de_espera;
-    struct ponto local
+    struct ponto local;
 };
 
 struct missao
 {
     int id;
-    int habilidades;
+    struct cjto_t *habilidades;
     int perigo;
     struct ponto local;
 };
@@ -60,14 +69,14 @@ struct invasao
 struct mundo
 {
     int NHerois;
-    struct heroi herois;
+    struct heroi *herois;
     int NBases;
-    struct base bases;
+    struct base *bases;
     int NMissoes;
-    struct missao missoes;
+    struct missao *missoes;
     int NInvasoes;
-    struct invasao invasoes;
+    struct invasao *invasoes;
     int NHabilidades;
-    struct ponto TamanhoMundo;
+    int TamanhoMundo;
     int relogio;
 };

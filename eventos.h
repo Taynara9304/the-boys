@@ -1,7 +1,5 @@
-#include <stdlib.h>
-#include "fila.h"
-#include "fprio.h"
-#include "entidades.c"
+#ifndef EVENTOS
+#define EVENTOS
 
 void chega(int t, struct heroi h, struct base b);
 
@@ -28,3 +26,5 @@ void recupera_heroi(int t, struct heroi h);
 void reconstroi_base(int t, struct base b);
 
 void fim(int t);
+
+#endif

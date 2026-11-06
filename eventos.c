@@ -3,7 +3,7 @@
 #include "fila.h"
 #include "fprio.h"
 #include "eventos.h"
-#include "entidades.c"
+#include "entidades.h"
 
 void chega(int t, struct heroi h, struct base b)
 {
