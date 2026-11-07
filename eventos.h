@@ -7,39 +7,39 @@
 void chega(struct mundo *m, int t, struct evento *ev);
 
 // 2
-void espera(int t, struct heroi *h, struct base b);
+void espera(struct mundo *m, int t, struct evento *ev);
 
 // 3
-void desiste(int t, struct heroi h, struct base b);
+void desiste(struct mundo *m, int t, struct evento *ev);
 
 // 4
-void avisa(int t, struct base b);
+void avisa(struct mundo *m, int t, struct evento *ev);
 
 // 5
-void entra(int t, struct heroi h, struct base b);
+void entra(struct mundo *m, int t, struct evento *ev);
 
 // 6
-void sai(int t, struct heroi h, struct base b);
+void sai(struct mundo *m, int t, struct evento *ev);
 
 // 7
-void viaja(int t, struct heroi h, struct base b);
+void viaja(struct mundo *m, int t, struct evento *ev);
 
 // 8
-void morre(int t, struct heroi h, struct base b);
+void morre(struct mundo *m, int t, struct evento *ev);
 
 // 9
-void missao(int t, struct missao m);
+void missao(struct mundo *m, int t, struct evento *ev);
 
 // 10
-void invade(int t, struct invasao i, struct base b);
+void invade(struct mundo *m, int t, struct evento *ev);
 
 // 11
-void recupera_heroi(int t, struct heroi h);
+void recupera_heroi(struct mundo *m, int t, struct evento *ev);
 
 // 12
-void reconstroi_base(int t, struct base b);
+void reconstroi_base(struct mundo *m, int t, struct evento *ev);
 
 // 13
-void fim(int t);
+void fim(struct mundo *m, int t, struct evento *ev);
 
 #endif

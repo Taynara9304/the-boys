@@ -7,10 +7,8 @@
 #include <time.h>
 
 #include "entidades.h"
-#include "eventos.h"
-#include "conjunto.h"
-#include "fila.h"
-#include "fprio.h"
+#include "universo.h"
+#include "simulacao.h"
 
 // seus #defines vão aqui
 
@@ -22,12 +20,14 @@ int main()
   srand(time(NULL));
 
   // iniciar o mundo
-  struct mundo m;
-  inicializar_mundo(&m);
+  struct mundo *m = calloc(1, sizeof(struct mundo));
+  inicializar_mundo(m);
 
   // executar o laço de simulação
+  simula_mundo(m);
 
   // destruir o mundo
+  destroi_mundo(m);
 
   return (0);
 }
