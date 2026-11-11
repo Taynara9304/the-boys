@@ -36,7 +36,6 @@ struct base
     int id;
     int lotacao_maxima;
     struct cjto_t *presentes;
-    int id_herois[6];
     int estado; // 0 = desabilitada; 1 = abilitada
     struct fila_t *fila_de_espera;
     struct ponto local;
@@ -48,6 +47,7 @@ struct missao
     struct cjto_t *habilidades;
     int perigo;
     struct ponto local;
+    int concluida; // 0 = não; 1 = sim
 };
 
 struct invasao

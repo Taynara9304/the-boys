@@ -268,37 +268,99 @@ void morre(struct mundo *m, int t, struct evento *ev)
 
 void missao(struct mundo *m, int t, struct evento *ev)
 {
-    // acha a base mais próxima da missão
-    struct base bmp = primeira_base;
+    /*  calcula a distância de cada base ao local da missão M
+        encontra BMP = base mais próxima ativa da missão cujos heróis ativos
+        possam cumpri-la */
 
-    for (int i = 1; i < qtdBases; i++)
+    struct missao *missao = &m->missoes[ev->id_missao];
+
+    int idBmp = -1;
+    int menorDistancia = 0;
+
+    for (int i = 0; i < m->NBases; i++)
     {
-        // como eu pego as bases?
-        int distancia = sqrt(pow((h.id_base.x - b.local.x), 2) + pow((h.id_base.y - b.local.y), 2));
-        if (distancia < bmp)
-            bmp = base;
+        struct base *b = &m->bases[i];
+
+        if (!b->estado)
+            continue;
+
+        int dx = missao->local.x - b->local.x;
+        int dy = missao->local.y - b->local.y;
+        int distancia = dx * dx + dy * dy;
+
+        if (idBmp != -1 && distancia >= menorDistancia)
+            continue;
+
+        // verifica se os heróis da base tem as habilidades da missão
+        struct cjto_t *habilidadesBase = cjto_cria(m->NHabilidades);
+
+        if (!habilidadesBase)
+            continue;
+
+        for (int j = 0; j < b->presentes->num; j++)
+        {
+            struct heroi *h = &m->herois[b->presentes->flag[j]];
+            struct cjto_t *novo = cjto_uniao(habilidadesBase, h->habilidades);
+            cjto_destroi(habilidadesBase);
+            habilidadesBase = novo;
+        }
+
+        if (cjto_contem(habilidadesBase, missao->habilidades))
+        {
+            idBmp = i;
+            menorDistancia = distancia;
+        }
+        cjto_destroi(habilidadesBase);
     }
 
-    if (bmp)
+    if (idBmp != -1)
     {
-        // como marca uma missão como concluida?
-        for (int i = 0; i < qtdHeroisNaBae; i++)
-        {
-            if (heroi_atual.estado = 0)
-            {
-                continue;
-            }
+        struct base *b = &m->bases[idBmp];
+        missao->concluida = 1;
 
-            int risco = m.perigo / (h.paciencia + h.experiencia + 1);
+        for (int i = 0; i < b->presentes->num; i++)
+        {
+            struct heroi *h = &m->herois[b->presentes->flag[i]];
+            if (!h->estado)
+                continue;
+
+            int risco = missao->perigo / (h->paciencia + h->experiencia + 1);
 
             if (risco > (rand() % 31))
-                // insere morre() na LEF;
-                else h.experiencia += 1;
+            {
+                // cria e insere na LEF o evento MORRE (agora, B)
+                struct evento *novo_ev = malloc(sizeof(struct evento));
+                if (!novo_ev)
+                    return;
+
+                novo_ev->tipo = 8;
+                novo_ev->id_heroi = h->id;
+                novo_ev->id_base = b->id;
+                novo_ev->id_missao = missao->id;
+                novo_ev->id_invasao = -1;
+
+                if (fprio_insere(m->lef, novo_ev, novo_ev->tipo, t) < 0)
+                    free(novo_ev);
+            }
+            else
+                h->experiencia += 1;
         }
     }
     else
     {
-        // insere na LEF missao(t + 24*60, m)
+        // cria e insere na LEF o evento MISSAO (t + 24*60, m)
+        struct evento *novo_ev = malloc(sizeof(struct evento));
+        if (!novo_ev)
+            return;
+
+        novo_ev->tipo = 9;
+        novo_ev->id_heroi = -1;
+        novo_ev->id_base = -1;
+        novo_ev->id_missao = missao->id;
+        novo_ev->id_invasao = -1;
+
+        if (fprio_insere(m->lef, novo_ev, novo_ev->tipo, t + 24 * 60) < 0)
+            free(novo_ev);
     }
 }
 
