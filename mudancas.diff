@@ -1,0 +1,289 @@
+--- orig_backup/eventos.c	2026-11-11 20:39:12.958365809 +0000
++++ proj/the-boys/eventos.c	2026-11-11 20:39:13.014554797 +0000
+@@ -268,59 +268,124 @@
+         free(novo_ev);
+ }
+ 
+-void missao(struct mundo *m, int t, struct evento *ev)
++// imprime um conjunto no formato "[ a b c ]" (sem quebra de linha)
++static void imprime_conjunto(struct cjto_t *c)
++{
++    printf("[ ");
++    for (int i = 0; i < c->cap; i++)
++        if (c->flag[i])
++            printf("%d ", i);
++    printf("]");
++}
++
++// distância cartesiana (em metros) entre a base e o local da missão
++static int distancia_base_missao(struct base *b, struct missao *ms)
++{
++    double dx = ms->local.x - b->local.x;
++    double dy = ms->local.y - b->local.y;
++
++    return (int)sqrt(dx * dx + dy * dy);
++}
++
++// bases ordenadas por distância crescente (desempate pelo id)
++struct base_dist
++{
++    int id;
++    int dist;
++};
++
++static int compara_base_dist(const void *a, const void *b)
+ {
+-    /*  calcula a distância de cada base ao local da missão M
+-        encontra BMP = base mais próxima ativa da missão cujos heróis ativos
+-        possam cumpri-la */
++    const struct base_dist *x = a, *y = b;
+ 
++    if (x->dist != y->dist)
++        return x->dist - y->dist;
++    return x->id - y->id;
++}
++
++void missao(struct mundo *m, int t, struct evento *ev)
++{
+     struct missao *missao = &m->missoes[ev->id_missao];
+ 
+-    int idBmp = -1;
+-    int menorDistancia = 0;
++    missao->qtdTentativas++;
++
++    printf("%6d: MISSAO %d TENT %d HAB REQ: ", t, missao->id, missao->qtdTentativas);
++    imprime_conjunto(missao->habilidades);
++    printf("\n");
++
++    // calcula a distância de cada base ativa ao local da missão e ordena
++    struct base_dist *ordem = malloc(m->NBases * sizeof(struct base_dist));
++    if (!ordem)
++        return;
+ 
++    int n = 0;
+     for (int i = 0; i < m->NBases; i++)
+     {
+-        struct base *b = &m->bases[i];
+-
+-        if (b->estado != 1)
++        if (m->bases[i].estado != 1)
+             continue;
+ 
+-        int dx = missao->local.x - b->local.x;
+-        int dy = missao->local.y - b->local.y;
+-        int distancia = dx * dx + dy * dy;
++        ordem[n].id = i;
++        ordem[n].dist = distancia_base_missao(&m->bases[i], missao);
++        n++;
++    }
+ 
+-        if (idBmp != -1 && distancia >= menorDistancia)
+-            continue;
++    qsort(ordem, n, sizeof(struct base_dist), compara_base_dist);
+ 
+-        // verifica se os heróis da base tem as habilidades da missão
+-        struct cjto_t *habilidadesBase = cjto_cria(m->NHabilidades);
++    // analisa as bases em ordem crescente de distância até achar uma apta
++    int idBmp = -1;
++    struct cjto_t *habsBmp = NULL;
+ 
+-        if (!habilidadesBase)
++    for (int k = 0; k < n && idBmp == -1; k++)
++    {
++        struct base *b = &m->bases[ordem[k].id];
++
++        printf("%6d: MISSAO %d BASE %d DIST %d HEROIS [ ", t, missao->id, b->id, ordem[k].dist);
++        for (int j = 0; j < b->presentes->cap; j++)
++            if (b->presentes->flag[j] && m->herois[j].estado == 1)
++                printf("%d ", j);
++        printf("]\n");
++
++        // união das habilidades dos heróis ativos presentes na base
++        struct cjto_t *uniao = cjto_cria(m->NHabilidades);
++        if (!uniao)
+             continue;
+ 
+         for (int j = 0; j < b->presentes->cap; j++)
+         {
+-            if (!b->presentes->flag[j])
++            if (!b->presentes->flag[j] || m->herois[j].estado != 1)
+                 continue;
+ 
+             struct heroi *h = &m->herois[j];
+-            struct cjto_t *novo = cjto_uniao(habilidadesBase, h->habilidades);
+ 
+-            cjto_destroi(habilidadesBase);
++            printf("%6d: MISSAO %d HAB HEROI %2d: ", t, missao->id, h->id);
++            imprime_conjunto(h->habilidades);
++            printf("\n");
++
++            struct cjto_t *novo = cjto_uniao(uniao, h->habilidades);
++            cjto_destroi(uniao);
++            uniao = novo;
+ 
+-            habilidadesBase = novo;
++            if (!uniao)
++                break;
+         }
+ 
+-        if (habilidadesBase && cjto_contem(habilidadesBase, missao->habilidades) == 1)
++        if (!uniao)
++            continue;
++
++        printf("%6d: MISSAO %d UNIAO HAB BASE %d: ", t, missao->id, b->id);
++        imprime_conjunto(uniao);
++        printf("\n");
++
++        if (cjto_contem(uniao, missao->habilidades) == 1)
+         {
+-            idBmp = i;
+-            menorDistancia = distancia;
++            idBmp = b->id;
++            habsBmp = uniao;
+         }
+-        cjto_destroi(habilidadesBase);
++        else
++            cjto_destroi(uniao);
+     }
+ 
+-    missao->qtdTentativas++;
++    free(ordem);
+ 
+     if (idBmp != -1)
+     {
+@@ -328,6 +393,11 @@
+         b->qtdMissoes++;
+         m->qtdMissoesCumpridas++;
+ 
++        printf("%6d: MISSAO %d CUMPRIDA BASE %d HABS: ", t, missao->id, b->id);
++        imprime_conjunto(habsBmp);
++        printf("\n");
++        cjto_destroi(habsBmp);
++
+         for (int i = 0; i < b->presentes->cap; i++)
+         {
+             if (!b->presentes->flag[i])
+@@ -335,14 +405,15 @@
+ 
+             struct heroi *h = &m->herois[i];
+ 
+-            if (!h->estado)
++            // só heróis ativos participam (mortos e debilitados não)
++            if (h->estado != 1)
+                 continue;
+ 
+-            int risco = missao->perigo / (h->paciencia + h->experiencia + 1);
++            double risco = missao->perigo / (h->paciencia + h->experiencia + 1.0);
+ 
+             if (risco > (rand() % 31))
+             {
+-                // cria e insere na LEF o evento MORRE (agora, B)
++                // cria e insere na LEF o evento MORRE (agora, H, B)
+                 struct evento *novo_ev = malloc(sizeof(struct evento));
+                 if (!novo_ev)
+                     return;
+@@ -362,6 +433,8 @@
+     }
+     else
+     {
++        printf("%6d: MISSAO %d IMPOSSIVEL\n", t, missao->id);
++
+         // cria e insere na LEF o evento MISSAO (t + 24*60, m)
+         struct evento *novo_ev = malloc(sizeof(struct evento));
+         if (!novo_ev)
+@@ -386,6 +459,19 @@
+     if (!b->estado)
+         return;
+ 
++    printf("%6d: INVADE BASE %d INVADE %d\n", t, b->id, invasao->id);
++
++    printf("%6d: INVADE %d BASE %d HEROIS INATIVOS [", t, invasao->id, b->id);
++    int primeiro = 1;
++    for (int i = 0; i < b->presentes->cap; i++)
++    {
++        if (!b->presentes->flag[i])
++            continue;
++        printf("%s%d", primeiro ? "" : ", ", i);
++        primeiro = 0;
++    }
++    printf("]\n");
++
+     for (int i = 0; i < b->presentes->cap; i++)
+     {
+         if (!b->presentes->flag[i])
+@@ -444,6 +530,8 @@
+ 
+     b->estado = 0;
+ 
++    printf("%6d: INVADE %d BASE %d INATIVA\n", t, invasao->id, b->id);
++
+     // cria e insere na LEF o evento RECONSTROI_BASE (t + i.tempo_penalidade_base, B)
+     struct evento *novo_ev = malloc(sizeof(struct evento));
+     if (!novo_ev)
+@@ -477,7 +565,7 @@
+ {
+     (void)ev;
+ 
+-    printf("%d: FIM\n", t);
++    printf("%6d: FIM\n", t);
+ 
+     for (int i = 0; i < m->NHerois; i++)
+     {
+--- orig_backup/entidades.h	2026-11-11 20:39:12.958455335 +0000
++++ proj/the-boys/entidades.h	2026-11-11 20:39:13.014971867 +0000
+@@ -9,10 +9,10 @@
+ #define T_FIM_DO_MUNDO 525600 // 525600 = 60*24*365 = 365 dias
+ #define N_TAMANHO_MUNDO 20000 // não era um par de coordenadas?
+ #define N_HABILIDADES 10
+-#define N_HEROIS N_HABILIDADES * 5
+-#define N_BASES N_HEROIS / 5
+-#define N_MISSOES T_FIM_DO_MUNDO / 100
+-#define N_INVASOES T_FIM_DO_MUNDO / 10000
++#define N_HEROIS (N_HABILIDADES * 5)
++#define N_BASES (N_HEROIS / 5)
++#define N_MISSOES (T_FIM_DO_MUNDO / 100)
++#define N_INVASOES (T_FIM_DO_MUNDO / 10000)
+ 
+ struct ponto
+ {
+--- orig_backup/universo.h	2026-11-11 20:39:12.958447736 +0000
++++ proj/the-boys/universo.h	2026-11-11 20:39:13.015231444 +0000
+@@ -1,3 +1,6 @@
++#ifndef UNIVERSO
++#define UNIVERSO
++
+ #include "entidades.h"
+ 
+ void inicializar_mundo(struct mundo *m);
+@@ -10,6 +13,8 @@
+ 
+ struct invasao *inicializar_invasoes();
+ 
+-void eventos_iniciais();
++void eventos_iniciais(struct mundo *m);
+ 
+ struct mundo *destroi_mundo(struct mundo *w);
++
++#endif
+--- orig_backup/simulacao.c	2026-11-11 20:39:12.958114885 +0000
++++ proj/the-boys/simulacao.c	2026-11-11 20:39:13.015465692 +0000
+@@ -14,6 +14,11 @@
+     {
+         ev_atual = fprio_retira(m->lef, &tipo, &tempo);
+ 
++        if (!ev_atual)
++            break;
++
++        m->qtdEventos++;
++
+         switch (tipo)
+         {
+         case 1:
+@@ -61,6 +66,5 @@
+         }
+ 
+         free(ev_atual);
+-        m->qtdEventos++;
+     }
+ }
+\ No newline at end of file

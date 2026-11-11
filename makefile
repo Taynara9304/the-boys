@@ -1,7 +1,7 @@
 # makefile The Boys
 # Carlos Maziero - DINF/UFPR, 2024/2
 
-CCC      = gcc
+CC      = gcc
 CFLAGS  = -Wall -Wextra -Werror -g -std=c99
 LDLIBS  = -lm
 MAIN    = theboys
