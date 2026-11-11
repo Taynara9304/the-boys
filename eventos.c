@@ -281,7 +281,7 @@ void missao(struct mundo *m, int t, struct evento *ev)
     {
         struct base *b = &m->bases[i];
 
-        if (!b->estado)
+        if (b->estado != 1)
             continue;
 
         int dx = missao->local.x - b->local.x;
@@ -366,21 +366,80 @@ void missao(struct mundo *m, int t, struct evento *ev)
 
 void invade(struct mundo *m, int t, struct evento *ev)
 {
-    if (b.estado == 0)
-    {
+    struct base *b = &m->bases[ev->id_base];
+    struct invasao *invasao = &m->invasoes[ev->id_invasao];
+
+    if (!b->estado)
         return;
-    }
 
-    for (int i = 0; i < qtdHerois; i++)
+    for (int i = 0; i < b->presentes->num; i++)
     {
-        // como deixa um herói inativo?
-        // insere na LEF recupera_heroi(t + i.tempo_penalidade_heroi, h);
+        struct heroi *h = &m->herois[b->presentes->flag[i]];
+        h->estado = 3;
+
+        // cria e insere na LEF o evento RECUPERA_HEROI (t + i.tempo_penalidade_heroi, B)
+        struct evento *novo_ev = malloc(sizeof(struct evento));
+        if (!novo_ev)
+            return;
+
+        novo_ev->tipo = 11;
+        novo_ev->id_heroi = h->id;
+        novo_ev->id_base = b->id;
+        novo_ev->id_missao = -1;
+        novo_ev->id_invasao = invasao->id;
+
+        if (fprio_insere(m->lef, novo_ev, novo_ev->tipo, t + invasao->tempo_penalidade_heroi) < 0)
+            free(novo_ev);
+
         // remove da LEF o sai()
-        // insere na LEF sai()
+        struct fpnodo_t **p = &m->lef->prim;
+
+        while (*p)
+        {
+            struct evento *e = (*p)->item;
+
+            if (e->id_heroi == h->id && e->id_base == b->id && e->tipo == 6)
+            {
+                struct fpnodo_t *removido = *p;
+                *p = removido->prox;
+                free(removido->item);
+                free(removido);
+                m->lef->num--;
+            }
+            else
+                p = &(*p)->prox;
+        }
+
+        // cria e insere na LEF o evento SAI ()
+        struct evento *sai = malloc(sizeof(struct evento));
+        if (!sai)
+            return;
+
+        sai->tipo = 6;
+        sai->id_heroi = h->id;
+        sai->id_base = b->id;
+        sai->id_missao = -1;
+        sai->id_invasao = invasao->id;
+
+        if (fprio_insere(m->lef, sai, sai->tipo, t) < 0)
+            free(sai);
     }
 
-    b.estado = 0;
-    // insere na LEF reconstroi_base(t + i.tempo_penalidade_base, b);
+    b->estado = 0;
+
+    // cria e insere na LEF o evento RECONSTROI_BASE (t + i.tempo_penalidade_base, B)
+    struct evento *novo_ev = malloc(sizeof(struct evento));
+    if (!novo_ev)
+        return;
+
+    novo_ev->tipo = 12;
+    novo_ev->id_heroi = -1;
+    novo_ev->id_base = b->id;
+    novo_ev->id_missao = -1;
+    novo_ev->id_invasao = invasao->id;
+
+    if (fprio_insere(m->lef, novo_ev, novo_ev->tipo, t + invasao->tempo_penalidade_base) < 0)
+        free(novo_ev);
 }
 
 void recupera_heroi(struct mundo *m, int t, struct evento *ev)
