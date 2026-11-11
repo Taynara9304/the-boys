@@ -39,6 +39,8 @@ struct base
     int estado; // 0 = desabilitada; 1 = abilitada
     struct fila_t *fila_de_espera;
     struct ponto local;
+    int qtdMissoes;
+    int qtdMaxHeroisFila;
 };
 
 struct missao
@@ -47,7 +49,7 @@ struct missao
     struct cjto_t *habilidades;
     int perigo;
     struct ponto local;
-    int concluida; // 0 = não; 1 = sim
+    int qtdTentativas;
 };
 
 struct invasao
@@ -72,6 +74,13 @@ struct mundo
     int TamanhoMundo;
     int relogio;
     struct fprio_t *lef;
+    int qtdEventos;
+    int qtdMissoesCumpridas;
+    int qtdTentativas;
+    int minTentativas;
+    int maxTentativas;
+    int qtdMortes;
+    int qtdInvasoes;
 };
 
 struct evento

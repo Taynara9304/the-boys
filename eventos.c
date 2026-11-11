@@ -50,6 +50,9 @@ void espera(struct mundo *m, int t, struct evento *ev)
 {
     struct base *b = &m->bases[ev->id_base];
 
+    if (b->fila_de_espera->num + 1 > b->qtdMaxHeroisFila)
+        b->qtdMaxHeroisFila = b->fila_de_espera->num + 1;
+
     printf("%6d: ESPERA HEROI %2d BASE %d (%2d)\n", t, ev->id_heroi, b->id,
            fila_tamanho(b->fila_de_espera));
 
@@ -81,7 +84,7 @@ void desiste(struct mundo *m, int t, struct evento *ev)
 
     novo_ev->tipo = 7;
     novo_ev->id_heroi = ev->id_heroi;
-    novo_ev->id_base = rand() % N_BASES;
+    novo_ev->id_base = rand() % m->NBases;
     novo_ev->id_missao = -1;
     novo_ev->id_invasao = -1;
 
@@ -160,7 +163,7 @@ void sai(struct mundo *m, int t, struct evento *ev)
            b->presentes->num, b->lotacao_maxima);
 
     // procura uma nova base
-    int novaBase = rand() % N_BASES;
+    int novaBase = rand() % m->NBases;
 
     // insere na LEF o viaja()
     struct evento *novo_ev = malloc(sizeof(struct evento));
@@ -222,13 +225,12 @@ void viaja(struct mundo *m, int t, struct evento *ev)
 void morre(struct mundo *m, int t, struct evento *ev)
 {
     struct base *b = &m->bases[ev->id_base];
-
-    // retira da base atual
     struct heroi *h = &m->herois[ev->id_heroi];
+    m->qtdMortes++;
 
     cjto_retira(b->presentes, h->id);
 
-    h->estado = 3;
+    h->estado = 0;
 
     printf("%6d: MORRE HEROI %2d MISSAO %d\n", t, h->id, ev->id_missao);
 
@@ -313,10 +315,13 @@ void missao(struct mundo *m, int t, struct evento *ev)
         cjto_destroi(habilidadesBase);
     }
 
+    missao->qtdTentativas++;
+
     if (idBmp != -1)
     {
         struct base *b = &m->bases[idBmp];
-        missao->concluida = 1;
+        b->qtdMissoes++;
+        m->qtdMissoesCumpridas++;
 
         for (int i = 0; i < b->presentes->num; i++)
         {
@@ -440,6 +445,8 @@ void invade(struct mundo *m, int t, struct evento *ev)
 
     if (fprio_insere(m->lef, novo_ev, novo_ev->tipo, t + invasao->tempo_penalidade_base) < 0)
         free(novo_ev);
+
+    m->qtdInvasoes++;
 }
 
 void recupera_heroi(struct mundo *m, int t, struct evento *ev)
@@ -454,7 +461,45 @@ void reconstroi_base(struct mundo *m, int t, struct evento *ev)
 
 void fim(struct mundo *m, int t, struct evento *ev)
 {
-    // como encerra a simulação?
-    // onde eu guardo as estatísticas?
-    // eu tenho que imprimir aqui ou crio outra função e chamo aqui?
+    printf("%d: FIM\n", t);
+
+    for (int i = 0; i < m->NHerois; i++)
+    {
+        struct heroi *h = &m->herois[i];
+
+        printf("HEROI %2d %s PAC %3d VEL %4d EXP %4d HABS [ ", h->id,
+               h->estado ? "VIVO" : "MORTO", h->paciencia, h->velocidade, h->experiencia);
+
+        for (int j = 0; j < h->habilidades->num; j++)
+            printf("%d ", h->habilidades->flag[j]);
+        printf("]\n");
+    }
+
+    for (int i = 0; i < m->NBases; i++)
+    {
+        struct base *b = &m->bases[i];
+
+        printf("BASE %2d LOT %2d FILA MAX %2d MISSOES %d\n", b->id,
+               b->lotacao_maxima, b->qtdMaxHeroisFila, b->qtdMissoes);
+    }
+
+    int min = m->missoes[0].qtdTentativas, max = min, soma = 0;
+    for (int i = 0; i < m->NMissoes; i++)
+    {
+        int q = m->missoes[i].qtdTentativas;
+        if (q < min)
+            min = q;
+        if (q > max)
+            max = q;
+        soma += q;
+    }
+
+    printf("EVENTOS TRATADOS: %d\n", m->qtdEventos);
+    printf("MISSOES CUMPRIDAS: %d/%d (%.1f%%)\n", m->qtdMissoesCumpridas,
+           m->NMissoes, 100.0 * m->qtdMissoesCumpridas / m->NMissoes);
+    printf("INVASÕES REALIZADAS: %d/%d (%.1f%%)\n", m->qtdInvasoes,
+           m->NInvasoes, 100.0 * m->qtdInvasoes / m->NInvasoes);
+    printf("TENTATIVAS/MISSAO: MIN %d, MAX %d, MEDIA %.1f\n", min, max,
+           (float)soma / m->NMissoes);
+    printf("TAXA MORTALIDADE: %.1f%%\n", 100.0 * m->qtdMortes / m->NHerois);
 }

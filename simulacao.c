@@ -58,5 +58,7 @@ void simula_mundo(struct mundo *m)
         default:
             break;
         }
+
+        m->qtdEventos++;
     }
 }

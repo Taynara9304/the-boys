@@ -1,4 +1,4 @@
-// programa principal do projeto "The Boys - 2024/2"
+// programa principal do projeto "The Boys - 2026/2"
 // Autor: Taynara da Silva Dias, GRR 20261372
 
 // seus #includes vão aqui

@@ -4,6 +4,7 @@
 
 void eventos_iniciais(struct mundo *m)
 {
+    // cria evento CHEGA
     for (int i = 0; i < N_HEROIS; i++)
     {
         struct evento *ev = malloc(sizeof(struct evento));
@@ -24,14 +25,7 @@ void eventos_iniciais(struct mundo *m)
         }
     }
 
-    /*
-      Cada missão deve ser agendada para ocorrer em algum momento da simu-
-      lação:
-      para cada missão M:
-      tempo = número aleatório [0...T_FIM_DO_MUNDO]
-      criar e inserir na LEF o evento MISSÃO (tempo, M)
-
-    */
+    // cria evento MISSAO
     for (int i = 0; i < N_MISSOES; i++)
     {
         struct evento *ev = malloc(sizeof(struct evento));
@@ -51,13 +45,7 @@ void eventos_iniciais(struct mundo *m)
         }
     }
 
-    /*
-    Cada invasão deve ser agendada para ocorrer a partir dos três primeiros dias
-    de simulação:
-    para cada invasão I:
-    tempo = número aleatório [(60*24*3)+1...T_FIM_DO_MUNDO]
-    criar e inserir na LEF o evento INVADE (tempo, I)
-  */
+    // cria evento INVASAO
     for (int i = 0; i < N_INVASOES; i++)
     {
         struct evento *ev = malloc(sizeof(struct evento));
@@ -77,11 +65,7 @@ void eventos_iniciais(struct mundo *m)
         }
     }
 
-    /*
-      O evento FIM deve ser agendado para o instante final da simulação:
-      tempo = T_FIM_DO_MUNDO
-      criar e inserir na LEF o evento FIM (tempo)
-    */
+    // cria o evento FIM
     struct evento *ev = malloc(sizeof(struct evento));
     if (!ev)
         return;
