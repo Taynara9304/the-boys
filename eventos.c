@@ -299,15 +299,20 @@ void missao(struct mundo *m, int t, struct evento *ev)
         if (!habilidadesBase)
             continue;
 
-        for (int j = 0; j < b->presentes->num; j++)
+        for (int j = 0; j < b->presentes->cap; j++)
         {
-            struct heroi *h = &m->herois[b->presentes->flag[j]];
+            if (!b->presentes->flag[j])
+                continue;
+
+            struct heroi *h = &m->herois[j];
             struct cjto_t *novo = cjto_uniao(habilidadesBase, h->habilidades);
+
             cjto_destroi(habilidadesBase);
+
             habilidadesBase = novo;
         }
 
-        if (cjto_contem(habilidadesBase, missao->habilidades))
+        if (habilidadesBase && cjto_contem(habilidadesBase, missao->habilidades) == 1)
         {
             idBmp = i;
             menorDistancia = distancia;
@@ -323,9 +328,13 @@ void missao(struct mundo *m, int t, struct evento *ev)
         b->qtdMissoes++;
         m->qtdMissoesCumpridas++;
 
-        for (int i = 0; i < b->presentes->num; i++)
+        for (int i = 0; i < b->presentes->cap; i++)
         {
-            struct heroi *h = &m->herois[b->presentes->flag[i]];
+            if (!b->presentes->flag[i])
+                continue;
+
+            struct heroi *h = &m->herois[i];
+
             if (!h->estado)
                 continue;
 
@@ -470,8 +479,9 @@ void fim(struct mundo *m, int t, struct evento *ev)
         printf("HEROI %2d %s PAC %3d VEL %4d EXP %4d HABS [ ", h->id,
                h->estado ? "VIVO" : "MORTO", h->paciencia, h->velocidade, h->experiencia);
 
-        for (int j = 0; j < h->habilidades->num; j++)
-            printf("%d ", h->habilidades->flag[j]);
+        for (int j = 0; j < h->habilidades->cap; j++)
+            if (h->habilidades->flag[j])
+                printf("%d ", j);
         printf("]\n");
     }
 
