@@ -218,16 +218,74 @@ int cjto_contem(struct cjto_t *c1, struct cjto_t *c2)
 
 // Cria e retorna o conjunto uniao entre os conjunto c1 e c2.
 // Retorno: ponteiro para o novo conjunto ou NULL em erro.
-struct cjto_t *cjto_uniao(struct cjto_t *c1, struct cjto_t *c2);
+struct cjto_t *cjto_uniao(struct cjto_t *c1, struct cjto_t *c2)
+{
+    if (!c1 || !c2)
+        return NULL;
+
+    struct cjto_t *conjunto = cjto_cria((c1->cap > c2->cap) ? c1->cap : c2->cap);
+
+    if (!conjunto)
+        return NULL;
+
+    for (int i = 0; i < conjunto->cap; i++)
+        if ((i < c1->cap && c1->flag[i]) || (i < c2->cap && c2->flag[i]))
+            cjto_insere(conjunto, i);
+
+    return conjunto;
+}
 
 // Cria e retorna o conjunto interseção entre os conjunto c1 e c2.
 // Retorno: ponteiro para o novo conjunto ou NULL em erro.
-struct cjto_t *cjto_inter(struct cjto_t *c1, struct cjto_t *c2);
+struct cjto_t *cjto_inter(struct cjto_t *c1, struct cjto_t *c2)
+{
+    if (!c1 || !c2)
+        return NULL;
+
+    struct cjto_t *conjunto = cjto_cria(c1->cap);
+
+    if (!conjunto)
+        return NULL;
+
+    for (int i = 0; i < conjunto->cap; i++)
+        if (c1->flag[i] && !(i < c2->cap && c2->flag[i]))
+            cjto_insere(conjunto, i);
+
+    return conjunto;
+}
 
 // Cria e retorna o conjunto diferença c1 - c2.
 // Retorno: ponteiro para o novo conjunto ou NULL em erro.
-struct cjto_t *cjto_dif(struct cjto_t *c1, struct cjto_t *c2);
+struct cjto_t *cjto_dif(struct cjto_t *c1, struct cjto_t *c2)
+{
+    if (!c1 || !c2)
+        return NULL;
+
+    struct cjto_t *conjunto = cjto_cria((c1->num > c2->num) ? c1->num : c2->num);
+
+    if (!conjunto)
+        return NULL;
+
+    for (int i = 0; i < conjunto->cap; i++)
+        if ((i < c1->cap && c1->flag[i]) || (i < c2->cap && c2->flag[i]))
+            cjto_insere(conjunto, i);
+
+    return conjunto;
+}
 
 // Imprime o conteúdo do conjunto no formato "item item ...",
 // com um espaço entre itens, sem espaços antes/depois e sem \n no fim
-void cjto_imprime(struct cjto_t *c);
+void cjto_imprime(struct cjto_t *c)
+{
+    if (!c)
+        return;
+
+    for (int i = 0; i < c->num - 1; i++)
+    {
+        if (c->flag[i])
+            printf("%d ", i);
+    }
+
+    if (c->flag[c->num])
+        printf("%d", c->num);
+}

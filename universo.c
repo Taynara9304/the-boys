@@ -190,5 +190,37 @@ struct invasao *inicializar_invasoes()
 // fuções de destroi
 struct mundo *destroi_mundo(struct mundo *w)
 {
+    if (!w)
+        return NULL;
+
+    if (w->herois)
+    {
+        for (int i = 0; i < w->NHerois; i++)
+            cjto_destroi(w->herois[i].habilidades);
+        free(w->herois);
+    }
+
+    if (w->bases)
+    {
+        for (int i = 0; i < w->NBases; i++)
+        {
+            cjto_destroi(w->bases[i].presentes);
+            fila_destroi(&w->bases[i].fila_de_espera);
+        }
+        free(w->bases);
+    }
+
+    if (w->missoes)
+    {
+        for (int i = 0; i < w->NMissoes; i++)
+            cjto_destroi(w->missoes[i].habilidades);
+        free(w->missoes);
+    }
+
+    free(w->invasoes);
+
+    fprio_destroi(&w->lef);
+
+    free(w);
     return NULL;
 }
