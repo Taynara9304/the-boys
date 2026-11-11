@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "simulacao.h"
 #include "eventos.h"
 
@@ -59,6 +60,7 @@ void simula_mundo(struct mundo *m)
             break;
         }
 
+        free(ev_atual);
         m->qtdEventos++;
     }
 }

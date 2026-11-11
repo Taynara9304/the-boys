@@ -204,8 +204,11 @@ struct mundo *destroi_mundo(struct mundo *w)
     {
         for (int i = 0; i < w->NBases; i++)
         {
-            cjto_destroi(w->bases[i].presentes);
-            fila_destroi(&w->bases[i].fila_de_espera);
+            while (fila_tamanho(w->bases[i].fila_de_espera) > 0)
+                fila_retira(w->bases[i].fila_de_espera);
+
+            w->bases[i].presentes = cjto_destroi(w->bases[i].presentes);
+            w->bases[i].fila_de_espera = fila_destroi(w->bases[i].fila_de_espera);
         }
         free(w->bases);
     }
@@ -219,7 +222,7 @@ struct mundo *destroi_mundo(struct mundo *w)
 
     free(w->invasoes);
 
-    fprio_destroi(&w->lef);
+    w->lef = fprio_destroi(w->lef);
 
     free(w);
     return NULL;

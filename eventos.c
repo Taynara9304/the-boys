@@ -460,16 +460,20 @@ void invade(struct mundo *m, int t, struct evento *ev)
 
 void recupera_heroi(struct mundo *m, int t, struct evento *ev)
 {
+    (void)t;
     m->herois[ev->id_heroi].estado = 1;
 }
 
 void reconstroi_base(struct mundo *m, int t, struct evento *ev)
 {
+    (void)t;
     m->bases[ev->id_base].estado = 1;
 }
 
 void fim(struct mundo *m, int t, struct evento *ev)
 {
+    (void)ev;
+
     printf("%d: FIM\n", t);
 
     for (int i = 0; i < m->NHerois; i++)

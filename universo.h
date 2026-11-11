@@ -12,5 +12,4 @@ struct invasao *inicializar_invasoes();
 
 void eventos_iniciais();
 
-// fuções de destroi
 struct mundo *destroi_mundo(struct mundo *w);

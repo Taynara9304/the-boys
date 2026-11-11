@@ -1,38 +1,30 @@
 # makefile The Boys
 # Carlos Maziero - DINF/UFPR, 2024/2
 
-CC      = gcc
+CCC      = gcc
 CFLAGS  = -Wall -Wextra -Werror -g -std=c99
 LDLIBS  = -lm
 MAIN    = theboys
 ENTREGA = $(MAIN)
 
-# lista de arquivos de cabeçalho (a completar)
-HDR = fila.h fprio.h conjunto.h
+# ajuste para os cabeçalhos que existem no seu projeto
+HDR = entidades.h universo.h simulacao.h eventos.h fila.h fprio.h conjunto.h
 
-# lista de arquivos-objeto (a completar)
-# não inclua conjunto.o, senão ele será removido com "make clean"
-OBJ = fila.o fprio.o theboys.o
+# conjunto.o fica fora para o "make clean" não apagá-lo
+OBJS = $(MAIN).o universo.o simulacao.o eventos.o fila.o fprio.o
 
-# construir o executável
-$(MAIN): $(MAIN).o $(OBJ) conjunto.o
+$(MAIN): $(OBJS) conjunto.o
+	$(CC) $(OBJS) conjunto.o $(LDLIBS) -o $(MAIN)
 
-# construir os arquivos-objeto (a completar)
-$(MAIN).o: $(MAIN).c $(HDR)
+# todo objeto é refeito se algum cabeçalho mudar
+$(OBJS): $(HDR)
 
-# construir os TADs
-fila.o: fila.c fila.h
-fprio.o: fprio.c fprio.h
-
-# executar
 run: $(MAIN)
 	./$(MAIN)
 
-# testar no Valgrind
 valgrind: $(MAIN)
 	valgrind --leak-check=full --track-origins=yes ./$(MAIN)
 
-# gerar arquivo TGZ para entregar
 tgz: clean
 	-mkdir -p /tmp/$(USER)/$(ENTREGA)
 	chmod 0700 /tmp/$(USER)/$(ENTREGA)
@@ -41,7 +33,5 @@ tgz: clean
 	rm -rf /tmp/$(USER)
 	@echo "Arquivo $(ENTREGA).tgz criado para entrega"
 
-# limpar arquivos temporários
 clean:
-	rm -f *~ $(OBJ) $(MAIN) /tmp/$(USER)/$(ENTREGA) $(ENTREGA).tgz
-
+	rm -f *~ $(OBJS) $(MAIN) $(ENTREGA).tgz
