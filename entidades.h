@@ -7,7 +7,7 @@
 
 #define T_INICIO 0
 #define T_FIM_DO_MUNDO 525600 // 525600 = 60*24*365 = 365 dias
-#define N_TAMANHO_MUNDO 20000 // não era um par de coordenadas?
+#define N_TAMANHO_MUNDO 20000
 #define N_HABILIDADES 10
 #define N_HEROIS N_HABILIDADES * 5
 #define N_BASES N_HEROIS / 5
@@ -39,8 +39,7 @@ struct base
     int estado; // 0 = desabilitada; 1 = abilitada
     struct fila_t *fila_de_espera;
     struct ponto local;
-    int qtdMissoes;
-    int qtdMaxHeroisFila;
+    
 };
 
 struct missao
@@ -74,13 +73,8 @@ struct mundo
     int TamanhoMundo;
     int relogio;
     struct fprio_t *lef;
-    int qtdEventos;
-    int qtdMissoesCumpridas;
-    int qtdTentativas;
-    int minTentativas;
-    int maxTentativas;
-    int qtdMortes;
-    int qtdInvasoes;
+    struct estatistica estatisticas;
+   
 };
 
 struct evento
@@ -90,6 +84,18 @@ struct evento
     int id_base;
     int id_missao;
     int id_invasao;
+};
+
+struct estatistica {
+    int qtdEventos;
+    int qtdMissoesCumpridas;
+    int qtdTentativas;
+    int minTentativas;
+    int maxTentativas;
+    int qtdMortes;
+    int qtdInvasoes;
+    int missoes_base[N_BASES];
+    int maxFila_base[N_BASES];
 };
 
 #endif
