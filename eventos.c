@@ -378,15 +378,34 @@ void invade(struct mundo *m, int t, struct evento *ev)
     struct base *b = &m->bases[ev->id_base];
     struct invasao *invasao = &m->invasoes[ev->id_invasao];
 
+    // invasão em base já inativa é ignorada
     if (!b->estado)
         return;
 
-    for (int i = 0; i < b->presentes->num; i++)
+    printf("%6d: INVADE BASE %d INVADE %d\n", t, b->id, invasao->id);
+
+    printf("%6d: INVADE %d BASE %d HEROIS INATIVOS [", t, invasao->id, b->id);
+    int primeiro = 1;
+    for (int j = 0; j < b->presentes->cap; j++)
     {
-        struct heroi *h = &m->herois[b->presentes->flag[i]];
+        if (!b->presentes->flag[j])
+            continue;
+
+        printf(primeiro ? "%d" : ", %d", j);
+        primeiro = 0;
+    }
+    printf("]\n");
+
+    // percorre o vetor de presentes
+    for (int j = 0; j < b->presentes->cap; j++)
+    {
+        if (!b->presentes->flag[j])
+            continue;
+
+        struct heroi *h = &m->herois[j];
         h->estado = 3;
 
-        // cria e insere na LEF o evento RECUPERA_HEROI (t + i.tempo_penalidade_heroi, B)
+        // cria e insere na LEF o evento RECUPERA_HEROI (t + i.tempo_penalidade_heroi, H)
         struct evento *novo_ev = malloc(sizeof(struct evento));
         if (!novo_ev)
             return;
@@ -400,7 +419,7 @@ void invade(struct mundo *m, int t, struct evento *ev)
         if (fprio_insere(m->lef, novo_ev, novo_ev->tipo, t + invasao->tempo_penalidade_heroi) < 0)
             free(novo_ev);
 
-        // remove da LEF o sai()
+        // remove da LEF o SAI agendado para o herói
         struct fpnodo_t **p = &m->lef->prim;
 
         while (*p)
@@ -419,7 +438,7 @@ void invade(struct mundo *m, int t, struct evento *ev)
                 p = &(*p)->prox;
         }
 
-        // cria e insere na LEF o evento SAI ()
+        // cria e insere na LEF o evento SAI (agora, H, B)
         struct evento *sai = malloc(sizeof(struct evento));
         if (!sai)
             return;
@@ -435,6 +454,8 @@ void invade(struct mundo *m, int t, struct evento *ev)
     }
 
     b->estado = 0;
+
+    printf("%6d: INVADE %d BASE %d INATIVA\n", t, invasao->id, b->id);
 
     // cria e insere na LEF o evento RECONSTROI_BASE (t + i.tempo_penalidade_base, B)
     struct evento *novo_ev = malloc(sizeof(struct evento));
