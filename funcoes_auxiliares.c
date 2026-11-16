@@ -1,6 +1,7 @@
 #include "funcoes_auxiliares.h"
 #include "entidades.h"
 #include <math.h>
+#include <stdlib.h>
 
 int calc_distancia_entre_bases(struct base *b_origem, struct base *b_destino)
 {
@@ -41,7 +42,7 @@ struct elemento
     int distancia;
 };
 
-struct base *ordenar_bases(struct mundo *m, struct missao *missao, struct base **basesOrdenadas)
+void ordenar_bases(struct mundo *m, struct missao *missao, struct base **basesOrdenadas)
 {
     struct elemento distancias[m->NBases];
 
@@ -76,6 +77,4 @@ struct base *ordenar_bases(struct mundo *m, struct missao *missao, struct base *
     // reorganiza as bases
     for (int i = 0; i < m->NBases; i++)
         basesOrdenadas[i] = &m->bases[distancias[i].id];
-
-    return basesOrdenadas;
 }

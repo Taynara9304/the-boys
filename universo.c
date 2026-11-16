@@ -2,6 +2,7 @@
 #include "universo.h"
 #include "funcoes_auxiliares.h"
 #include <stdlib.h>
+#include <string.h>
 
 void eventos_iniciais(struct mundo *m)
 {
@@ -105,6 +106,9 @@ void inicializar_mundo(struct mundo *m)
 
     if (!m->herois || !m->bases || !m->missoes || !m->invasoes || !m->lef)
         return;
+
+    memset(&m->estatisticas, 0, sizeof(m->estatisticas));
+    m->estatisticas.minTentativas = T_FIM_DO_MUNDO;
 
     eventos_iniciais(m);
 }

@@ -156,6 +156,8 @@ void *fprio_remove_item(struct fprio_t *f, void *item)
         }
         p = &(*p)->prox;
     }
+
+    return NULL;
 }
 
 // Informa o número de itens na fila.

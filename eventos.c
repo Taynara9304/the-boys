@@ -89,7 +89,7 @@ void desiste(struct mundo *m, int t, struct evento *ev)
 
     novo_ev->tipo = 7;
     novo_ev->id_heroi = ev->id_heroi;
-    novo_ev->id_base = aleat(0, m->NBases);
+    novo_ev->id_base = aleat(0, m->NBases - 1);
     novo_ev->id_missao = -1;
     novo_ev->id_invasao = -1;
 
@@ -103,8 +103,9 @@ void avisa(struct mundo *m, int t, struct evento *ev)
     struct base *b = &m->bases[ev->id_base];
 
     printf("%6d: AVISA PORTEIRO BASE %d (%2d/%2d) FILA [ ", t, b->id,
-           b->presentes->num, b->lotacao_maxima);
-    fila_imprime(b->fila_de_espera);
+           cjto_card(b->presentes), b->lotacao_maxima);
+    for (struct fila_nodo_t *n = b->fila_de_espera->prim; n; n = n->prox)
+        printf("%2d ", ((struct heroi *)n->item)->id);
     printf("]\n");
 
     // enquanto houver vagas na base e heróis na fila, remove os heróis da fila e coloca na base
@@ -449,7 +450,7 @@ void invade(struct mundo *m, int t, struct evento *ev)
     if (fprio_insere(m->lef, novo_ev, novo_ev->tipo, t + invasao->tempo_penalidade_base) < 0)
         free(novo_ev);
 
-    m->qtdInvasoes++;
+    m->estatisticas.qtdInvasoes++;
 }
 
 void recupera_heroi(struct mundo *m, int t, struct evento *ev)
@@ -488,7 +489,7 @@ void fim(struct mundo *m, int t, struct evento *ev)
         struct base *b = &m->bases[i];
 
         printf("BASE %2d LOT %2d FILA MAX %2d MISSOES %d\n", b->id,
-               b->lotacao_maxima, b->qtdMaxHeroisFila, b->qtdMissoes);
+               b->lotacao_maxima, m->estatisticas.maxFila_base[b->id], m->estatisticas.missoes_base[b->id]);
     }
 
     int min = m->missoes[0].qtdTentativas, max = min, soma = 0;
@@ -502,12 +503,12 @@ void fim(struct mundo *m, int t, struct evento *ev)
         soma += q;
     }
 
-    printf("EVENTOS TRATADOS: %d\n", m->qtdEventos);
-    printf("MISSOES CUMPRIDAS: %d/%d (%.1f%%)\n", m->qtdMissoesCumpridas,
-           m->NMissoes, 100.0 * m->qtdMissoesCumpridas / m->NMissoes);
-    printf("INVASÕES REALIZADAS: %d/%d (%.1f%%)\n", m->qtdInvasoes,
-           m->NInvasoes, 100.0 * m->qtdInvasoes / m->NInvasoes);
+    printf("EVENTOS TRATADOS: %d\n", m->estatisticas.qtdEventos);
+    printf("MISSOES CUMPRIDAS: %d/%d (%.1f%%)\n", m->estatisticas.qtdMissoesCumpridas,
+           m->NMissoes, 100.0 * m->estatisticas.qtdMissoesCumpridas / m->NMissoes);
+    printf("INVASÕES REALIZADAS: %d/%d (%.1f%%)\n", m->estatisticas.qtdInvasoes,
+           m->NInvasoes, 100.0 * m->estatisticas.qtdInvasoes / m->NInvasoes);
     printf("TENTATIVAS/MISSAO: MIN %d, MAX %d, MEDIA %.1f\n", min, max,
            (float)soma / m->NMissoes);
-    printf("TAXA MORTALIDADE: %.1f%%\n", 100.0 * m->qtdMortes / m->NHerois);
+    printf("TAXA MORTALIDADE: %.1f%%\n", 100.0 * m->estatisticas.qtdMortes / m->NHerois);
 }

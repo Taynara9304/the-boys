@@ -7,16 +7,17 @@ LDLIBS  = -lm
 MAIN    = theboys
 ENTREGA = $(MAIN)
 
-# ajuste para os cabeçalhos que existem no seu projeto
-HDR = entidades.h universo.h simulacao.h eventos.h fila.h fprio.h conjunto.h
+HDR = entidades.h eventos.h universo.h simulacao.h funcoes_auxiliares.h fila.h fprio.h conjunto.h
 
-# conjunto.o fica fora para o "make clean" não apagá-lo
-OBJS = $(MAIN).o universo.o simulacao.o eventos.o fila.o fprio.o
+OBJ = fila.o fprio.o eventos.o universo.o simulacao.o funcoes_auxiliares.o theboys.o
 
-$(MAIN): $(OBJS) conjunto.o
-	$(CC) $(OBJS) conjunto.o $(LDLIBS) -o $(MAIN)
+$(MAIN): $(OBJ) conjunto.o
 
-# todo objeto é refeito se algum cabeçalho mudar
+eventos.o: eventos.c $(HDR)
+universo.o: universo.c $(HDR)
+simulacao.o: simulacao.c $(HDR)
+funcoes_auxiliares.o: funcoes_auxiliares.c $(HDR)
+
 $(OBJS): $(HDR)
 
 run: $(MAIN)

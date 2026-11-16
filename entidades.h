@@ -39,7 +39,6 @@ struct base
     int estado; // 0 = desabilitada; 1 = abilitada
     struct fila_t *fila_de_espera;
     struct ponto local;
-    
 };
 
 struct missao
@@ -59,6 +58,19 @@ struct invasao
     int tempo_penalidade_heroi;
 };
 
+struct estatistica
+{
+    int qtdEventos;
+    int qtdMissoesCumpridas;
+    int qtdTentativas;
+    int minTentativas;
+    int maxTentativas;
+    int qtdMortes;
+    int qtdInvasoes;
+    int missoes_base[N_BASES];
+    int maxFila_base[N_BASES];
+};
+
 struct mundo
 {
     int NHerois;
@@ -74,7 +86,6 @@ struct mundo
     int relogio;
     struct fprio_t *lef;
     struct estatistica estatisticas;
-   
 };
 
 struct evento
@@ -84,18 +95,6 @@ struct evento
     int id_base;
     int id_missao;
     int id_invasao;
-};
-
-struct estatistica {
-    int qtdEventos;
-    int qtdMissoesCumpridas;
-    int qtdTentativas;
-    int minTentativas;
-    int maxTentativas;
-    int qtdMortes;
-    int qtdInvasoes;
-    int missoes_base[N_BASES];
-    int maxFila_base[N_BASES];
 };
 
 #endif
