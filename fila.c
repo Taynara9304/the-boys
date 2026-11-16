@@ -40,7 +40,6 @@ struct fila_t *fila_destroi(struct fila_t *f)
 }
 
 // Insere o item na fila
-// Inserir duas vezes o mesmo item (o mesmo ponteiro) é um erro.
 // Retorno: número de itens na fila após a operação ou -1 se erro.
 int fila_insere(struct fila_t *f, void *item)
 {

@@ -18,7 +18,7 @@ void chega(struct mundo *m, int t, struct evento *ev)
 
     h->id_base = b->id;
 
-    //verifica se o herói vai esperar
+    // verifica se o herói vai esperar
     if ((cjto_card(b->presentes) < b->lotacao_maxima) && fila_tamanho(b->fila_de_espera) == 0)
         esp = 1;
     else
@@ -33,10 +33,10 @@ void chega(struct mundo *m, int t, struct evento *ev)
         return;
 
     if (esp && b->estado)
-        // insere espera() na LEF
+        // insere ESPERA() na LEF
         novo_ev->tipo = 2;
     else
-        // insere desiste() na LEF
+        // insere DESISTE() na LEF
         novo_ev->tipo = 3;
 
     novo_ev->id_heroi = h->id;
@@ -82,7 +82,7 @@ void desiste(struct mundo *m, int t, struct evento *ev)
 {
     printf("%6d: DESIST HEROI %2d BASE %d\n", t, ev->id_heroi, ev->id_base);
 
-    // insere na LEF o viaja()
+    // insere na LEF o VIAJA()
     struct evento *novo_ev = malloc(sizeof(struct evento));
     if (!novo_ev)
         return;
@@ -138,7 +138,7 @@ void entra(struct mundo *m, int t, struct evento *ev)
     struct base *b = &m->bases[ev->id_base];
 
     // tempo de permanência na base
-    int tpb = 15 + h->paciencia * ((rand() % 20) + 1);
+    int tpb = 15 + h->paciencia * aleat(1, 20);
 
     printf("%6d: ENTRA HEROI %2d BASE %d (%2d/%2d) SAI %d\n", t, h->id, b->id,
            b->presentes->num, b->lotacao_maxima, t + tpb);
@@ -172,7 +172,7 @@ void sai(struct mundo *m, int t, struct evento *ev)
            b->presentes->num, b->lotacao_maxima);
 
     // procura uma nova base
-    int novaBase = rand() % m->NBases;
+    int novaBase = aleat(0, m->NBases - 1);
 
     // insere na LEF o VIAJA()
     struct evento *novo_ev = malloc(sizeof(struct evento));
@@ -239,6 +239,7 @@ void morre(struct mundo *m, int t, struct evento *ev)
     struct heroi *h = &m->herois[ev->id_heroi];
     m->estatisticas.qtdMortes++;
 
+    // retira o herói da base
     cjto_retira(b->presentes, h->id);
 
     h->estado = 0;
@@ -246,23 +247,7 @@ void morre(struct mundo *m, int t, struct evento *ev)
     printf("%6d: MORRE HEROI %2d MISSAO %d\n", t, h->id, ev->id_missao);
 
     // remove da LEF todos os eventos futuros relacionados ao herói H
-    struct fpnodo_t **p = &m->lef->prim;
-
-    while (*p)
-    {
-        struct evento *e = (*p)->item;
-
-        if (e->id_heroi == h->id && e->tipo != 4)
-        {
-            struct fpnodo_t *removido = *p;
-            *p = removido->prox;
-            free(removido->item);
-            free(removido);
-            m->lef->num--;
-        }
-        else
-            p = &(*p)->prox;
-    }
+    remover_eventos_do_heroi(m->lef, h);
 
     // cria e insere na LEF o evento AVISA (agora, B)
     struct evento *novo_ev = malloc(sizeof(struct evento));
@@ -281,30 +266,26 @@ void morre(struct mundo *m, int t, struct evento *ev)
 
 void missao(struct mundo *m, int t, struct evento *ev)
 {
-    /*  calcula a distância de cada base ao local da missão M
-        encontra BMP = base mais próxima ativa da missão cujos heróis ativos
-        possam cumpri-la */
-
     struct missao *missao = &m->missoes[ev->id_missao];
 
-    int idBmp = -1;
-    int menorDistancia = 0;
+    // base mais próxima apta
+    struct base *bmp = NULL;
 
-    for (int i = 0; i < m->NBases; i++)
+    struct base *basesOrdenadas[N_BASES];
+
+    // ordena as bases em relação a distância da missão
+    ordenar_bases(m, missao, basesOrdenadas);
+
+    missao->qtdTentativas++;
+
+    for (int i = 0; i < m->NBases && !bmp; i++)
     {
-        struct base *b = &m->bases[i];
+        struct base *b = basesOrdenadas[i];
 
         if (b->estado != 1)
             continue;
 
-        int dx = missao->local.x - b->local.x;
-        int dy = missao->local.y - b->local.y;
-        int distancia = dx * dx + dy * dy;
-
-        if (idBmp != -1 && distancia >= menorDistancia)
-            continue;
-
-        // verifica se os heróis da base tem as habilidades da missão
+        // união das habilidades dos heróis ativos da base
         struct cjto_t *habilidadesBase = cjto_cria(m->NHabilidades);
 
         if (!habilidadesBase)
@@ -316,42 +297,44 @@ void missao(struct mundo *m, int t, struct evento *ev)
                 continue;
 
             struct heroi *h = &m->herois[j];
+
+            if (h->estado != 1)
+                continue;
+
             struct cjto_t *novo = cjto_uniao(habilidadesBase, h->habilidades);
 
             cjto_destroi(habilidadesBase);
 
             habilidadesBase = novo;
+
+            if (!habilidadesBase)
+                break;
         }
 
         if (habilidadesBase && cjto_contem(habilidadesBase, missao->habilidades) == 1)
-        {
-            idBmp = i;
-            menorDistancia = distancia;
-        }
+            bmp = b;
+
         cjto_destroi(habilidadesBase);
     }
 
-    missao->qtdTentativas++;
-
-    if (idBmp != -1)
+    if (bmp)
     {
-        struct base *b = &m->bases[idBmp];
-        b->qtdMissoes++;
-        m->qtdMissoesCumpridas++;
+        m->estatisticas.missoes_base[bmp->id]++;
+        m->estatisticas.qtdMissoesCumpridas++;
 
-        for (int i = 0; i < b->presentes->cap; i++)
+        for (int i = 0; i < bmp->presentes->cap; i++)
         {
-            if (!b->presentes->flag[i])
+            if (!bmp->presentes->flag[i])
                 continue;
 
             struct heroi *h = &m->herois[i];
 
-            if (!h->estado)
+            if (h->estado != 1)
                 continue;
 
-            int risco = missao->perigo / (h->paciencia + h->experiencia + 1);
+            double risco = missao->perigo / (h->paciencia + h->experiencia + 1);
 
-            if (risco > (rand() % 31))
+            if (risco > aleat(0, 30))
             {
                 // cria e insere na LEF o evento MORRE (agora, B)
                 struct evento *novo_ev = malloc(sizeof(struct evento));
@@ -360,7 +343,7 @@ void missao(struct mundo *m, int t, struct evento *ev)
 
                 novo_ev->tipo = 8;
                 novo_ev->id_heroi = h->id;
-                novo_ev->id_base = b->id;
+                novo_ev->id_base = bmp->id;
                 novo_ev->id_missao = missao->id;
                 novo_ev->id_invasao = -1;
 

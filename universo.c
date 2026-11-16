@@ -1,5 +1,6 @@
 #include "entidades.h"
 #include "universo.h"
+#include "funcoes_auxiliares.h"
 #include <stdlib.h>
 
 void eventos_iniciais(struct mundo *m)
@@ -14,11 +15,11 @@ void eventos_iniciais(struct mundo *m)
 
         ev->tipo = 1;
         ev->id_heroi = i;
-        ev->id_base = rand() % N_BASES;
+        ev->id_base = aleat(0, m->NBases - 1);
         ev->id_missao = -1;
         ev->id_invasao = -1;
 
-        if (fprio_insere(m->lef, ev, 1, (rand() % 4321)) < 0)
+        if (fprio_insere(m->lef, ev, 1, aleat(0, 4320)) < 0)
         {
             free(ev);
             return;
@@ -38,7 +39,7 @@ void eventos_iniciais(struct mundo *m)
         ev->id_missao = i;
         ev->id_invasao = -1;
 
-        if (fprio_insere(m->lef, ev, 9, (rand() % (T_FIM_DO_MUNDO + 1))) < 0)
+        if (fprio_insere(m->lef, ev, 9, aleat(0, T_FIM_DO_MUNDO)) < 0)
         {
             free(ev);
             return;
@@ -58,7 +59,7 @@ void eventos_iniciais(struct mundo *m)
         ev->id_missao = -1;
         ev->id_invasao = i;
 
-        if (fprio_insere(m->lef, ev, 10, 4321 + (rand() % (T_FIM_DO_MUNDO - 4321 + 1))) < 0)
+        if (fprio_insere(m->lef, ev, 10, aleat(4321, (T_FIM_DO_MUNDO))) < 0)
         {
             free(ev);
             return;
@@ -120,9 +121,9 @@ struct heroi *inicializar_herois()
         h[i].id = i;
         h[i].experiencia = 0;
         h[i].estado = 1;
-        h[i].paciencia = rand() % 101;
-        h[i].velocidade = (rand() % 4951) + 50;
-        h[i].habilidades = cjto_aleat((rand() % 3) + 1, N_HABILIDADES);
+        h[i].paciencia = aleat(0, 100);
+        h[i].velocidade = aleat(50, 5000);
+        h[i].habilidades = cjto_aleat(aleat(1, 3), N_HABILIDADES);
     }
 
     return h;
@@ -139,9 +140,9 @@ struct base *inicializar_bases()
     {
         b[i].id = i;
         b[i].estado = 1;
-        b[i].local.x = rand() % N_TAMANHO_MUNDO;
-        b[i].local.y = rand() % N_TAMANHO_MUNDO;
-        b[i].lotacao_maxima = (rand() % 8) + 3;
+        b[i].local.x = aleat(0, N_TAMANHO_MUNDO - 1);
+        b[i].local.y = aleat(0, N_TAMANHO_MUNDO - 1);
+        b[i].lotacao_maxima = aleat(3, 10);
         b[i].presentes = cjto_cria(N_HEROIS);
         b[i].fila_de_espera = fila_cria();
     }
@@ -160,10 +161,10 @@ struct missao *inicializar_missoes()
     {
         ms[i].id = i;
 
-        ms[i].local.x = rand() % N_TAMANHO_MUNDO;
-        ms[i].local.y = rand() % N_TAMANHO_MUNDO;
-        ms[i].habilidades = cjto_aleat(((rand() % 5) + 6), N_HABILIDADES);
-        ms[i].perigo = rand() % 101;
+        ms[i].local.x = aleat(0, N_TAMANHO_MUNDO - 1);
+        ms[i].local.y = aleat(0, N_TAMANHO_MUNDO - 1);
+        ms[i].habilidades = cjto_aleat((aleat(6, 10)), N_HABILIDADES);
+        ms[i].perigo = aleat(0, 100);
     }
 
     return ms;
@@ -179,20 +180,20 @@ struct invasao *inicializar_invasoes()
     for (int i = 0; i < N_INVASOES; i++)
     {
         in[i].id = i;
-        in[i].local = rand() % N_BASES;
-        in[i].tempo_penalidade_heroi = rand() % 4321;
-        in[i].tempo_penalidade_base = rand() % 7201;
+        in[i].local = aleat(0, N_BASES - 1);
+        in[i].tempo_penalidade_heroi = aleat(0, 4320);
+        in[i].tempo_penalidade_base = aleat(0, 7200);
     }
 
     return in;
 }
 
-// fuções de destroi
 struct mundo *destroi_mundo(struct mundo *w)
 {
     if (!w)
         return NULL;
 
+    // libera os heróis
     if (w->herois)
     {
         for (int i = 0; i < w->NHerois; i++)
@@ -200,6 +201,7 @@ struct mundo *destroi_mundo(struct mundo *w)
         free(w->herois);
     }
 
+    // libera as bases
     if (w->bases)
     {
         for (int i = 0; i < w->NBases; i++)
@@ -213,6 +215,7 @@ struct mundo *destroi_mundo(struct mundo *w)
         free(w->bases);
     }
 
+    // libera as missões
     if (w->missoes)
     {
         for (int i = 0; i < w->NMissoes; i++)
@@ -220,10 +223,13 @@ struct mundo *destroi_mundo(struct mundo *w)
         free(w->missoes);
     }
 
+    // libera as invasões
     free(w->invasoes);
 
+    // libera a LEF
     w->lef = fprio_destroi(w->lef);
 
+    // libera o mundo
     free(w);
     return NULL;
 }

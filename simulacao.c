@@ -61,6 +61,6 @@ void simula_mundo(struct mundo *m)
         }
 
         free(ev_atual);
-        m->qtdEventos++;
+        m->estatisticas.qtdEventos++;
     }
 }
